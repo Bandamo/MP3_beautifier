@@ -1,12 +1,10 @@
 import eyed3
 import os
 import tqdm
-import shutil
-import requests
-import urllib
 import bs4
 from requests_html import HTMLSession
 import time
+import utils
 
 
 liste_artiste=[]
@@ -22,11 +20,12 @@ class song:
         self.album_art = "None"
     
     def update_tag(self):
-        audiofile = eyed3.load('beautiful/'+self.old_title)
+        audiofile = eyed3.load('beautiful/'+self.old_title+'.mp3')
+        
         if self.title != "None":
             audiofile.tag.title = self.title
-        else:
             if self.artist != "None":
+                print("Updating title")
                 audiofile.tag.artist = self.artist  
             if self.album != "None":
                 audiofile.tag.album = self.album
@@ -34,17 +33,19 @@ class song:
                 audiofile.tag.release_date = self.date
             if self.album_art != "None":
                 audiofile.tag.images.set(3, open("album/"+self.album_art, 'rb').read(), 'image/jpeg')
-            
+                print("Album art added")
             try:
                 audiofile.tag.save()
             except:
                 print("Error while saving tag")
                 pass
+        else:
+            print("No metadata found")
 
     def get_metadata(self,text,liste_artiste,liste_album):
 
         #Get the response from google
-        response = get_source_google(text).text
+        response = utils.get_source_google(text).text
         soup = bs4.BeautifulSoup(response, 'html.parser') #HTML page parsed
 
         found=False
@@ -98,55 +99,30 @@ class song:
             else:
                 print("Date : " + date[0].text[17:])
                 self.date = date[0].text[17:]
+        else:
+            print("No metadata found, trying with "+utils.back_from_one_space(text))
+            try:
+                self.get_metadata(utils.back_from_one_space(text),liste_artiste,liste_album)
+            except TypeError:
+                print("No metadata found after all, skipping")
+                f=open("song.log","a")
+                f.write(self.old_title+"\n")
+                f.close()
 
-#Suppression des fichiers dans beautiful
-
-def clean_beautiful():
-    for file in os.listdir('beautiful'):
-        os.remove('beautiful/' + file)
-
-#Copie des fichiers de ugly dans beautiful
-
-def copy_beautiful():
-    bar = tqdm.tqdm(total=len(os.listdir('ugly')))
-    for file in os.listdir('ugly'):
-        shutil.copy('ugly/' + file, 'beautiful/' + file)
-        bar.update(1)
-    bar.close()
-
-def get_source_google(search : str):
-    """Return the source code for the provided URL. 
-
-    Args: 
-        url (string): URL of the page to scrape.
-
-    Returns:
-        response (object): HTTP response object from requests_html. 
-    """
-    search = urllib.parse.quote(search)
-    url = "https://www.google.com/search?channel=fs&client=windows&q=" + search
-    try:
-        session = HTMLSession()
-        headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36"} 
-        response = session.get(url)
-        return response
-
-    except requests.exceptions.RequestException as e:
-        print(e)
-
-def back_from_one_space(text):
-    if len(text) == 0:
-        return None
-    i = -1
-    while i != len(text) and text[i] != ' ':
-        i -= 1
-    if i == len(text):
-        return None
-    return text[:i]
+    def get_album_art(self):
+        if self.album == "None" or self.artist == "None":
+            return 0
+        elif utils.remove_non_ascii(self.artist.lower()+self.album.lower())+".jpg" in os.listdir("album"):
+            print("Album art already downloaded")
+            self.album_art = utils.remove_non_ascii(self.artist.lower()+self.album.lower())+".jpg"
+        else:
+            print("Downloading album art")
+            utils.get_first_image(self.artist,self.album)
+            self.album_art = utils.remove_non_ascii(self.artist.lower()+self.album.lower())+".jpg"
 
 def main():
-    clean_beautiful()
-    copy_beautiful()
+    utils.clean_beautiful()
+    utils.copy_beautiful()
     print('Copie terminée')
     liste_song = os.listdir('beautiful')
     liste_song.sort()
@@ -162,9 +138,11 @@ def main():
         print(s)
         Song = song(s)
         Song.get_metadata(s,liste_artiste,liste_album)
+        Song.get_album_art()
         try:
             Song.update_tag()
-        except:
+        except TypeError:
+            print("Error while updating tag")
             pass
         time.sleep(0.5)
 
