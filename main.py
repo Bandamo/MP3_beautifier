@@ -5,6 +5,9 @@ import bs4
 from requests_html import HTMLSession
 import time
 import utils
+import tkinter as tk
+import gui
+from PIL import ImageTk,Image
 
 
 liste_artiste=[]
@@ -100,8 +103,8 @@ class song:
                 print("Date : " + date[0].text[17:])
                 self.date = date[0].text[17:]
         else:
-            print("No metadata found, trying with "+utils.back_from_one_space(text))
             try:
+                print("No metadata found, trying with "+utils.back_from_one_space(text))
                 self.get_metadata(utils.back_from_one_space(text),liste_artiste,liste_album)
             except TypeError:
                 print("No metadata found after all, skipping")
@@ -117,12 +120,12 @@ class song:
             self.album_art = utils.remove_non_ascii(self.artist.lower()+self.album.lower())+".jpg"
         else:
             print("Downloading album art")
-            utils.get_first_image(self.artist,self.album)
-            self.album_art = utils.remove_non_ascii(self.artist.lower()+self.album.lower())+".jpg"
+            if utils.get_first_image(self.artist,self.album) != 0:
+                self.album_art = utils.remove_non_ascii(self.artist.lower()+self.album.lower())+".jpg"
 
-def main():
-    utils.clean_beautiful()
-    utils.copy_beautiful()
+def main(gui_obj : gui.GUI,show : bool, album_art : bool):
+    #utils.clean_beautiful()
+    #utils.copy_beautiful()
     print('Copie terminée')
     liste_song = os.listdir('beautiful')
     liste_song.sort()
@@ -137,14 +140,31 @@ def main():
         bar.update(1)
         print(s)
         Song = song(s)
+        if show:
+            gui_obj.output.insert(tk.END, "\n\nProcessing "+s +"\n")
+            gui_obj.update()
+
         Song.get_metadata(s,liste_artiste,liste_album)
-        Song.get_album_art()
+        if Song.title != "None" and show :
+            gui_obj.output.insert(tk.END, "SUCCÈS \n" + Song.title + " - " + Song.artist)
+        else:
+            gui_obj.output.insert(tk.END, s + "ÉCHEC\n")
+        if album_art:
+            Song.get_album_art()
+            if Song.album_art!="None":
+                img = ImageTk.PhotoImage(Image.open("album/"+Song.album_art))
+                gui_obj.canvas.create_image(20,20, anchor=tk.NW, image = img)
+
+        gui_obj.update()
+
         try:
             Song.update_tag()
         except TypeError:
             print("Error while updating tag")
             pass
         time.sleep(0.5)
+        gui_obj.output.see("end")
+        gui_obj.update()
 
 if __name__=='__main__':
     main()

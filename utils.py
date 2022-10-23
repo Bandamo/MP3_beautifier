@@ -82,6 +82,7 @@ def get_first_image(artiste,album):
             finished = True
         except requests.exceptions.InvalidSchema:
             #The file is encoded in base64
+            return 0
             print("image en base64 : décryptage")
             code = element.find('img', attrs={'class':'mimg'})['src']
             if "data:image" in code:
@@ -93,7 +94,7 @@ def get_first_image(artiste,album):
                 print("Extension : " + extension)
                 code = code[index+12+7:]
                 print(code)
-        except KeyError:
+        except:
             print("No image found")
         index+=1
 if __name__ == "__main__":
