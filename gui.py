@@ -8,6 +8,8 @@ class GUI(tk.Tk):
         super().__init__(className=name)
         self.width = width
         self.height = height
+        self.filepath = ""
+
         self.change_geometry()
         self.create_menu_bar()
         self.canvas = tk.Canvas(self,width=int(self.width/2),height=int(self.height/2))
@@ -27,18 +29,24 @@ class GUI(tk.Tk):
 
         menu_run = tk.Menu(menu_bar, tearoff=0)
         menu_run.add_command(label="Lancer", command=self.run)
-        menu_run.add_command(label="Reprendre", command=self.print_random_number)
-        menu_run.add_command(label="Stop", command=self.print_random_number)
+        menu_run.add_command(label="Reprendre", command=self.run_from_save)
+        menu_run.add_command(label="Stop", command=self.quit)
         menu_bar.add_cascade(label="Lancer", menu=menu_run)
 
         self.config(menu=menu_bar)
 
     def choose_folder(self):
         filepath = filedialog.askdirectory()
-        print(filepath)
+        if filepath != "":
+            self.filepath = filepath
+            print(self.filepath)
+        
     
     def run(self):
-        main.main(self,True,True)
+        main.main(self,True,True,False)
+    
+    def run_from_save(self):
+        main.main(self,True,True,True)
 
     def print_random_number(self):
         r = random.randint(0,100)

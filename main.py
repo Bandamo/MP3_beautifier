@@ -1,6 +1,7 @@
 import eyed3
 import os
 import tqdm
+import numpy as np
 import bs4
 from requests_html import HTMLSession
 import time
@@ -123,19 +124,27 @@ class song:
             if utils.get_first_image(self.artist,self.album) != 0:
                 self.album_art = utils.remove_non_ascii(self.artist.lower()+self.album.lower())+".jpg"
 
-def main(gui_obj : gui.GUI,show : bool, album_art : bool):
-    #utils.clean_beautiful()
-    #utils.copy_beautiful()
+def main(gui_obj : gui.GUI,show : bool, album_art : bool, load_save : bool):
+    beautiful = utils.copy_beautiful(gui.filepath)
     print('Copie terminée')
-    liste_song = os.listdir('beautiful')
+    liste_song = os.listdir(beautiful)
     liste_song.sort()
     print("Liste des chansons évaluées, "+str(len(liste_song))+" chanson(s) trouvée(s).")
 
     liste_artiste=[]
     liste_album=[]
 
-    bar=tqdm.tqdm(total=len(os.listdir('beautiful')))
-    for s in liste_song:
+    save=0
+    try:
+        if load_save:
+            save=np.load("save.npy")
+    except:
+        pass
+    
+
+    bar=tqdm.tqdm(total=len(os.listdir(beautiful)))
+    for i in range(save,len(liste_song)):
+        s = liste_song[i]
         s=s[:-4]
         bar.update(1)
         print(s)
@@ -165,6 +174,8 @@ def main(gui_obj : gui.GUI,show : bool, album_art : bool):
         time.sleep(0.5)
         gui_obj.output.see("end")
         gui_obj.update()
+
+        np.save("save.npy",i+1)
 
 if __name__=='__main__':
     main()

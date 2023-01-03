@@ -16,12 +16,17 @@ def clean_beautiful():
 
 #Copie des fichiers de ugly dans beautiful
 
-def copy_beautiful():
-    bar = tqdm.tqdm(total=len(os.listdir('ugly')))
-    for file in os.listdir('ugly'):
-        shutil.copy('ugly/' + file, 'beautiful/' + file)
+def copy_beautiful(ugly : str):
+    bar = tqdm.tqdm(total=len(os.listdir(ugly)))
+    try:
+        os.mkdir(ugly+"beautiful")
+    except FileExistsError:
+        pass
+    for file in os.listdir(ugly):
+        shutil.copy(ugly + "/" + file, 'beautiful/' + file)
         bar.update(1)
     bar.close()
+    return ugly+"beautiful"
 
 #Récupération du code source d'une page google à partir de la recherche
 
@@ -98,4 +103,4 @@ def get_first_image(artiste,album):
             print("No image found")
         index+=1
 if __name__ == "__main__":
-    get_first_image("eminem","recovery")
+    copy_beautiful("ugly")
